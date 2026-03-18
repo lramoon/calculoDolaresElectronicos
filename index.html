@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="es">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Calculadora BDV a Binance</title>
+		<script src="https://cdn.tailwindcss.com"></script>
+		<style>
+			body {
+				background-color: #f3f4f6;
+				font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+			}
+			.card {
+				background: white;
+				border-radius: 1rem;
+				box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+			}
+			.input-group label {
+				display: block;
+				font-size: 0.875rem;
+				font-weight: 600;
+				color: #374151;
+				margin-bottom: 0.25rem;
+			}
+			.input-field {
+				width: 100%;
+				padding: 0.5rem 0.75rem;
+				border: 1px solid #d1d5db;
+				border-radius: 0.5rem;
+				outline: none;
+				transition: border-color 0.2s;
+			}
+			.input-field:focus {
+				border-color: #2563eb;
+				ring: 2px solid #bfdbfe;
+			}
+			.result-box {
+				background-color: #eff6ff;
+				border-left: 4px solid #2563eb;
+			}
+			.step-badge {
+				background: #dbeafe;
+				color: #1e40af;
+				padding: 2px 8px;
+				border-radius: 12px;
+				font-size: 0.7rem;
+				font-weight: bold;
+				text-transform: uppercase;
+			}
+		</style>
+	</head>
+	<body class="p-4 md:p-8">
+		<div class="max-w-2xl mx-auto card p-6">
+			<h1 class="text-2xl font-bold text-gray-800 mb-2">
+				Calculadora de Ruta: BDV → Binance
+			</h1>
+			<p class="text-sm text-gray-500 mb-6">
+				Calcula el flujo de tu dinero detallando cada paso del proceso.
+			</p>
+
+			<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+				<!-- Tasas -->
+				<div class="input-group">
+					<label>Tasa Oficial (BCV)</label>
+					<input
+						type="number"
+						id="tasaBcv"
+						class="input-field"
+						value="530"
+						step="0.01"
+					/>
+				</div>
+				<div class="input-group">
+					<label>Tasa P2P (Binance)</label>
+					<input
+						type="number"
+						id="tasaBinance"
+						class="input-field"
+						value="660"
+						step="0.01"
+					/>
+				</div>
+
+				<!-- Montos -->
+				<div class="input-group">
+					<label>Monto a comprar en BDV ($)</label>
+					<input
+						type="number"
+						id="montoDolares"
+						class="input-field"
+						value="171"
+						step="0.01"
+					/>
+				</div>
+				<div class="input-group">
+					<label>Equivalente Base (Bs)</label>
+					<input
+						type="number"
+						id="montoBs"
+						class="input-field"
+						placeholder="Calculando..."
+						step="0.01"
+					/>
+				</div>
+			</div>
+
+			<div class="border-t pt-6">
+				<h2 class="text-lg font-semibold text-gray-700 mb-4">
+					Flujo Detallado de Fondos
+				</h2>
+
+				<div id="resultados" class="space-y-4">
+					<!-- Los resultados aparecerán aquí -->
+					Cargando cálculos...
+				</div>
+			</div>
+
+			<div
+				class="mt-8 grid grid-cols-2 md:grid-cols-4 gap-2 text-[10px] uppercase tracking-wider text-gray-400 font-bold"
+			>
+				<div class="text-center">
+					Comisión BDV
+					<br />
+					<span class="text-gray-600">0.5% + 2.5%</span>
+				</div>
+				<div class="text-center">
+					Comisión Wally
+					<br />
+					<span class="text-gray-600">3% (0.06/2$)</span>
+				</div>
+				<div class="text-center">
+					Pérdida P2P
+					<br />
+					<span class="text-gray-600">7% Aprox.</span>
+				</div>
+				<div class="text-center">
+					Actualización
+					<br />
+					<span class="text-gray-600">Marzo 2024</span>
+				</div>
+			</div>
+		</div>
+
+		<script>
+			const inputs = ["tasaBcv", "tasaBinance", "montoDolares", "montoBs"];
+
+			inputs.forEach((id) => {
+				document.getElementById(id).addEventListener("input", (e) => {
+					const bcv = parseFloat(document.getElementById("tasaBcv").value) || 1;
+					if (id === "montoBs" && e.target.value > 0) {
+						document.getElementById("montoDolares").value = (
+							e.target.value / bcv
+						).toFixed(2);
+					} else if (id !== "montoBs") {
+						document.getElementById("montoBs").value = (
+							parseFloat(document.getElementById("montoDolares").value) * bcv
+						).toFixed(2);
+					}
+					calcular();
+				});
+			});
+
+			function calcular() {
+				const bcv = parseFloat(document.getElementById("tasaBcv").value) || 0;
+				const binanceRate =
+					parseFloat(document.getElementById("tasaBinance").value) || 0;
+				const montoInicialDolares =
+					parseFloat(document.getElementById("montoDolares").value) || 0;
+
+				// 1. Fase Banco de Venezuela (Salida)
+				const costoBaseBs = montoInicialDolares * bcv;
+				const comisionCompraBcv = costoBaseBs * 0.005; // 0.5% Comisión de compra electrónica
+				const totalBsPagados = costoBaseBs + comisionCompraBcv;
+
+				const comisionTarjetaDolares = montoInicialDolares * 0.025; // 2.5% Comisión por uso de tarjeta
+				const montoEnviadoAWally = montoInicialDolares - comisionTarjetaDolares;
+
+				// 2. Fase Wally (Entrada)
+				const comisionWally = montoEnviadoAWally * 0.03; // 3% aprox (0.06 por cada 2$)
+				const montoNetoWally = montoEnviadoAWally - comisionWally;
+
+				// 3. Fase Binance (7% de pérdida en el cambio reportada por el usuario)
+				const comisionP2P = montoNetoWally * 0.07;
+				const montoFinalBinance = montoNetoWally - comisionP2P;
+
+				// 4. Métricas finales
+				const tasaReal = totalBsPagados / montoFinalBinance;
+				const ahorroVsBinance =
+					montoFinalBinance * binanceRate - totalBsPagados;
+
+				const resDiv = document.getElementById("resultados");
+				resDiv.innerHTML = `
+                <!-- PASO 1: BANCO -->
+                <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <div class="flex justify-between mb-1"><span class="step-badge">Paso 1: Banco</span> <span class="text-xs text-gray-400">BCV: ${bcv}</span></div>
+                    <div class="flex justify-between text-sm"><span>Monto Base (Bs):</span> <span class="font-medium">Bs. ${costoBaseBs.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</span></div>
+                    <div class="flex justify-between text-xs text-red-500 mb-2"><span>+ Comisión Compra (0.5%):</span> <span>Bs. ${comisionCompraBcv.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</span></div>
+                    <div class="flex justify-between text-base border-t pt-1 border-gray-200"><span>Gasto Total en Cuenta:</span> <span class="font-bold text-red-600">Bs. ${totalBsPagados.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</span></div>
+                    <div class="flex justify-between text-xs text-gray-500 italic mt-2"><span>Comisión uso tarjeta (2.5%):</span> <span>-$ ${comisionTarjetaDolares.toFixed(2)}</span></div>
+                </div>
+
+                <!-- PASO 2: WALLY -->
+                <div class="p-4 bg-blue-50 rounded-lg border border-blue-100">
+                    <div class="flex justify-between mb-1"><span class="step-badge">Paso 2: Wally</span> <span class="text-xs text-gray-400">Recarga Digital</span></div>
+                    <div class="flex justify-between text-sm"><span>Monto que llega a Wally:</span> <span class="font-bold text-blue-700">$ ${montoNetoWally.toFixed(2)}</span></div>
+                    <div class="flex justify-between text-xs text-gray-500 italic"><span>Comisión Wally (3%):</span> <span>-$ ${comisionWally.toFixed(2)}</span></div>
+                </div>
+
+                <!-- PASO 3: BINANCE -->
+                <div class="p-4 bg-yellow-50 rounded-lg border border-yellow-100">
+                    <div class="flex justify-between mb-1"><span class="step-badge" style="background:#fef3c7; color:#92400e">Paso 3: Binance</span> <span class="text-xs text-gray-400">Cambio P2P</span></div>
+                    <div class="flex justify-between text-sm"><span>Recibes en Binance (USDT):</span> <span class="font-bold text-orange-700">$ ${montoFinalBinance.toFixed(2)}</span></div>
+                    <div class="flex justify-between text-xs text-gray-500 italic"><span>Pérdida en cambio (7%):</span> <span>-$ ${comisionP2P.toFixed(2)}</span></div>
+                </div>
+
+                <!-- TOTALES FINALES -->
+                <div class="result-box p-4 rounded-r-lg mt-4 space-y-2">
+                    <div class="flex justify-between items-center bg-white p-3 rounded shadow-sm">
+                        <span class="font-semibold text-gray-700 text-sm">TU TASA REAL:</span>
+                        <span class="font-black text-2xl text-blue-600">Bs. ${tasaReal.toFixed(2)}</span>
+                    </div>
+                    <div class="flex justify-between items-center text-sm px-2 ${ahorroVsBinance > 0 ? "text-green-600" : "text-red-600"} font-bold">
+                        <span>${ahorroVsBinance > 0 ? "ESTÁS AHORRANDO:" : "ESTÁS PERDIENDO:"}</span>
+                        <span>Bs. ${ahorroVsBinance.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</span>
+                    </div>
+                </div>
+            `;
+			}
+
+			window.onload = () => {
+				const bcv = parseFloat(document.getElementById("tasaBcv").value);
+				document.getElementById("montoBs").value = (171 * bcv).toFixed(2);
+				calcular();
+			};
+		</script>
+	</body>
+</html>
