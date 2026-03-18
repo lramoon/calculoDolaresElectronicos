@@ -161,67 +161,79 @@
 			});
 
 			function calcular() {
-				const bcv = parseFloat(document.getElementById("tasaBcv").value) || 0;
-				const binanceRate =
-					parseFloat(document.getElementById("tasaBinance").value) || 0;
-				const montoInicialDolares =
-					parseFloat(document.getElementById("montoDolares").value) || 0;
+			   const bcv = parseFloat(document.getElementById('tasaBcv').value) || 0;
+            const binanceRate = parseFloat(document.getElementById('tasaBinance').value) || 0;
+            const montoInicialDolares = parseFloat(document.getElementById('montoDolares').value) || 0;
 
-				// 1. Fase Banco de Venezuela (Salida)
-				const costoBaseBs = montoInicialDolares * bcv;
-				const comisionCompraBcv = costoBaseBs * 0.005; // 0.5% Comisión de compra electrónica
-				const totalBsPagados = costoBaseBs + comisionCompraBcv;
+            // 1. Fase Banco de Venezuela (Salida en Bolívares)
+            const comisionCompraPorcentaje = 0.5;
+            const totalBsPagados = (bcv * montoInicialDolares) * (1 + (comisionCompraPorcentaje / 100));
+            
+            const costoBaseBs = montoInicialDolares * bcv;
+            const comisionCompraBcv = totalBsPagados - costoBaseBs;
+            
+            // 2. Fase Envío (Uso Tarjeta) - Aplicando Monto / 1.025
+            const montoEnviadoAWally = montoInicialDolares / 1.025;
+            const comisionTarjetaDolares = montoInicialDolares - montoEnviadoAWally;
 
-				const comisionTarjetaDolares = montoInicialDolares * 0.025; // 2.5% Comisión por uso de tarjeta
-				const montoEnviadoAWally = montoInicialDolares - comisionTarjetaDolares;
+            // 3. Fase Recepción Wally - Aplicando Monto / 1.03
+            const montoNetoWally = montoEnviadoAWally / 1.03;
+            const comisionWally = montoEnviadoAWally - montoNetoWally;
 
-				// 2. Fase Wally (Entrada)
-				const comisionWally = montoEnviadoAWally * 0.03; // 3% aprox (0.06 por cada 2$)
-				const montoNetoWally = montoEnviadoAWally - comisionWally;
+            // 4. Fase Binance (7% de pérdida estimada)
+            const montoFinalBinance = montoNetoWally / 1.07; 
+            const comisionP2P = montoNetoWally - montoFinalBinance;
 
-				// 3. Fase Binance (7% de pérdida en el cambio reportada por el usuario)
-				const comisionP2P = montoNetoWally * 0.07;
-				const montoFinalBinance = montoNetoWally - comisionP2P;
+            // 5. Métricas finales
+            const tasaReal = totalBsPagados / montoFinalBinance;
+            const ahorroVsBinanceBs = (montoFinalBinance * binanceRate) - totalBsPagados;
+            const ahorroVsBinanceUsd = bcv > 0 ? (ahorroVsBinanceBs / bcv) : 0;
 
-				// 4. Métricas finales
-				const tasaReal = totalBsPagados / montoFinalBinance;
-				const ahorroVsBinance =
-					montoFinalBinance * binanceRate - totalBsPagados;
-
-				const resDiv = document.getElementById("resultados");
-				resDiv.innerHTML = `
+			  const resDiv = document.getElementById('resultados');
+            resDiv.innerHTML = `
                 <!-- PASO 1: BANCO -->
                 <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                    <div class="flex justify-between mb-1"><span class="step-badge">Paso 1: Banco</span> <span class="text-xs text-gray-400">BCV: ${bcv}</span></div>
-                    <div class="flex justify-between text-sm"><span>Monto Base (Bs):</span> <span class="font-medium">Bs. ${costoBaseBs.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</span></div>
-                    <div class="flex justify-between text-xs text-red-500 mb-2"><span>+ Comisión Compra (0.5%):</span> <span>Bs. ${comisionCompraBcv.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</span></div>
-                    <div class="flex justify-between text-base border-t pt-1 border-gray-200"><span>Gasto Total en Cuenta:</span> <span class="font-bold text-red-600">Bs. ${totalBsPagados.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</span></div>
-                    <div class="flex justify-between text-xs text-gray-500 italic mt-2"><span>Comisión uso tarjeta (2.5%):</span> <span>-$ ${comisionTarjetaDolares.toFixed(2)}</span></div>
+                    <div class="flex justify-between mb-1"><span class="step-badge">Paso 1: Banco</span> <span class="text-xs text-gray-400">Fórmula Directa</span></div>
+                    <div class="flex justify-between text-sm"><span>Costo Base (${montoInicialDolares}$):</span> <span class="font-medium">Bs. ${costoBaseBs.toLocaleString('es-VE', {minimumFractionDigits: 2})}</span></div>
+                    <div class="flex justify-between text-xs text-red-500 mb-2"><span>+ Impuesto Compra (0.5%):</span> <span>Bs. ${comisionCompraBcv.toLocaleString('es-VE', {minimumFractionDigits: 2})}</span></div>
+                    <div class="flex justify-between text-base border-t pt-1 border-gray-200"><span>Débito Total en Bolívares:</span> <span class="font-bold text-red-600">Bs. ${totalBsPagados.toLocaleString('es-VE', {minimumFractionDigits: 2})}</span></div>
                 </div>
 
-                <!-- PASO 2: WALLY -->
+                <!-- PASO 2: RECARGA (TARJETA) -->
                 <div class="p-4 bg-blue-50 rounded-lg border border-blue-100">
-                    <div class="flex justify-between mb-1"><span class="step-badge">Paso 2: Wally</span> <span class="text-xs text-gray-400">Recarga Digital</span></div>
-                    <div class="flex justify-between text-sm"><span>Monto que llega a Wally:</span> <span class="font-bold text-blue-700">$ ${montoNetoWally.toFixed(2)}</span></div>
+                    <div class="flex justify-between mb-1"><span class="step-badge">Paso 2: Tarjeta</span> <span class="text-xs text-gray-400">Monto / 1.025</span></div>
+                    <div class="flex justify-between text-sm"><span>Monto para Recarga:</span> <span class="font-bold text-blue-800">$ ${montoEnviadoAWally.toFixed(2)}</span></div>
+                    <div class="flex justify-between text-xs text-gray-500 italic"><span>Comisión Tarjeta (2.5%):</span> <span>-$ ${comisionTarjetaDolares.toFixed(2)}</span></div>
+                </div>
+
+                <!-- PASO 3: WALLY (NETO) -->
+                <div class="p-4 bg-indigo-50 rounded-lg border border-indigo-100">
+                    <div class="flex justify-between mb-1"><span class="step-badge" style="background:#e0e7ff; color:#3730a3">Paso 3: Wally</span> <span class="text-xs text-gray-400">Monto / 1.03</span></div>
+                    <div class="flex justify-between text-sm"><span>Monto Efectivo Wally:</span> <span class="font-bold text-indigo-700">$ ${montoNetoWally.toFixed(2)}</span></div>
                     <div class="flex justify-between text-xs text-gray-500 italic"><span>Comisión Wally (3%):</span> <span>-$ ${comisionWally.toFixed(2)}</span></div>
                 </div>
 
-                <!-- PASO 3: BINANCE -->
+                <!-- PASO 4: BINANCE -->
                 <div class="p-4 bg-yellow-50 rounded-lg border border-yellow-100">
-                    <div class="flex justify-between mb-1"><span class="step-badge" style="background:#fef3c7; color:#92400e">Paso 3: Binance</span> <span class="text-xs text-gray-400">Cambio P2P</span></div>
-                    <div class="flex justify-between text-sm"><span>Recibes en Binance (USDT):</span> <span class="font-bold text-orange-700">$ ${montoFinalBinance.toFixed(2)}</span></div>
-                    <div class="flex justify-between text-xs text-gray-500 italic"><span>Pérdida en cambio (7%):</span> <span>-$ ${comisionP2P.toFixed(2)}</span></div>
+                    <div class="flex justify-between mb-1"><span class="step-badge" style="background:#fef3c7; color:#92400e">Paso 4: Binance</span> <span class="text-xs text-gray-400">Cambio P2P (7%)</span></div>
+                    <div class="flex justify-between text-sm"><span>Monto Final (USDT):</span> <span class="font-bold text-orange-700">$ ${montoFinalBinance.toFixed(2)}</span></div>
+                    <div class="flex justify-between text-xs text-gray-500 italic"><span>Pérdida estimada:</span> <span>-$ ${comisionP2P.toFixed(2)}</span></div>
                 </div>
 
                 <!-- TOTALES FINALES -->
                 <div class="result-box p-4 rounded-r-lg mt-4 space-y-2">
                     <div class="flex justify-between items-center bg-white p-3 rounded shadow-sm">
-                        <span class="font-semibold text-gray-700 text-sm">TU TASA REAL:</span>
+                        <span class="font-semibold text-gray-700 text-sm">TASA REAL RESULTANTE:</span>
                         <span class="font-black text-2xl text-blue-600">Bs. ${tasaReal.toFixed(2)}</span>
                     </div>
-                    <div class="flex justify-between items-center text-sm px-2 ${ahorroVsBinance > 0 ? "text-green-600" : "text-red-600"} font-bold">
-                        <span>${ahorroVsBinance > 0 ? "ESTÁS AHORRANDO:" : "ESTÁS PERDIENDO:"}</span>
-                        <span>Bs. ${ahorroVsBinance.toLocaleString("es-VE", { minimumFractionDigits: 2 })}</span>
+                    <div class="p-2 border-t border-blue-200">
+                        <div class="flex justify-between items-center text-sm ${ahorroVsBinanceBs > 0 ? 'text-green-600' : 'text-red-600'} font-bold">
+                            <span>${ahorroVsBinanceBs > 0 ? 'AHORRO TOTAL:' : 'PÉRDIDA TOTAL:'}</span>
+                            <div class="text-right">
+                                <div>Bs. ${ahorroVsBinanceBs.toLocaleString('es-VE', {minimumFractionDigits: 2})}</div>
+                                <div class="text-xs opacity-80">$ ${ahorroVsBinanceUsd.toFixed(2)} USDT [BCV]</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             `;
