@@ -66,7 +66,7 @@
 						type="number"
 						id="tasaBcv"
 						class="input-field"
-						value="530"
+						value="550"
 						step="0.01"
 					/>
 				</div>
@@ -126,7 +126,7 @@
 				<div class="text-center">
 					Comisión Wally
 					<br />
-					<span class="text-gray-600">3% (0.06/2$)</span>
+					<span class="text-gray-600">3.5% (0.07/2$)</span>
 				</div>
 				<div class="text-center">
 					Pérdida P2P
@@ -176,8 +176,8 @@
             const montoEnviadoAWally = montoInicialDolares / 1.025;
             const comisionTarjetaDolares = montoInicialDolares - montoEnviadoAWally;
 
-            // 3. Fase Recepción Wally - Aplicando Monto / 1.03
-            const montoNetoWally = montoEnviadoAWally / 1.03;
+            // 3. Fase Recepción Wally - Aplicando Monto / 1.035
+            const montoNetoWally = montoEnviadoAWally / 1.035;
             const comisionWally = montoEnviadoAWally - montoNetoWally;
 
             // 4. Fase Binance (7% de pérdida estimada)
